@@ -1,0 +1,59 @@
+name: Deploy
+
+# Roda o build.py e publica o dist/ no GitHub Pages.
+# Nada gerado é versionado — o site é sempre construído a partir de data.py.
+#
+# Pré-requisito, uma vez só: no GitHub, Settings > Pages > Source = "GitHub Actions".
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # permite disparar na mão pela aba Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Um deploy por vez. Se dois pushes chegarem juntos, o mais novo ganha.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build
+        run: python build.py
+
+      - name: Verificar que o build não deixou pendências
+        # Falha o deploy se a foto de perfil estiver faltando: melhor quebrar
+        # aqui do que publicar um <img> quebrado. Logo de empresa faltando é só
+        # aviso — o placeholder com as iniciais cobre.
+        run: |
+          if python build.py | grep -q 'ATENÇÃO'; then
+            echo "::error::build.py reportou pendência bloqueante"
+            python build.py
+            exit 1
+          fi
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
