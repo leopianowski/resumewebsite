@@ -31,18 +31,28 @@ jobs:
           python-version: '3.12'
 
       - name: Build
-        run: python build.py
+        # `shell: bash` é necessário: ele liga `-o pipefail`, que o shell padrão
+        # do Actions não tem. Sem isso, num `python ... | tee`, um crash do
+        # build.py seria mascarado pelo exit 0 do tee e o job passaria.
+        shell: bash
+        run: python build.py | tee build.log
 
-      - name: Verificar que o build não deixou pendências
-        # Falha o deploy se a foto de perfil estiver faltando: melhor quebrar
-        # aqui do que publicar um <img> quebrado. Logo de empresa faltando é só
-        # aviso — o placeholder com as iniciais cobre.
+      - name: Bloquear deploy se faltar a foto de perfil
+        # Melhor quebrar aqui do que publicar um <img> quebrado. Logo de empresa
+        # faltando é só aviso — o placeholder com as iniciais cobre.
         run: |
-          if python build.py | grep -q 'ATENÇÃO'; then
-            echo "::error::build.py reportou pendência bloqueante"
-            python build.py
+          if grep -q 'ATENÇÃO' build.log; then
+            echo "::error::foto de perfil faltando em static/img/ — deploy bloqueado"
             exit 1
           fi
+
+      - name: Conferir que o dist saiu íntegro
+        # Rede de segurança contra artefato vazio ou pela metade.
+        run: |
+          test -f dist/index.html || { echo "::error::dist/index.html não existe"; exit 1; }
+          test -f dist/css/style.css || { echo "::error::CSS não foi copiado"; exit 1; }
+          test -f dist/.nojekyll || { echo "::error::.nojekyll não foi escrito"; exit 1; }
+          echo "dist/ com $(find dist -type f | wc -l) arquivos"
 
       - uses: actions/upload-pages-artifact@v3
         with:
