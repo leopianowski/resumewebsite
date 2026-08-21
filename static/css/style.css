@@ -1,0 +1,1374 @@
+/* =============================================================================
+   Leonardo Pianowski — currículo
+   Tema: The Matrix (1999). Fósforo verde, chuva de código, terminal CRT.
+
+   Sem JavaScript. Toda animação aqui é CSS:
+     - chuva digital ....... keyframes `fall` em colunas geradas pelo build.py
+     - boot digitado ....... `type` (width + steps) com delay acumulado
+     - reveal no scroll .... animation-timeline: view()  (com fallback)
+     - menu mobile ......... checkbox + seletor irmão
+     - foto ................ duotone verde que revela a cor real no hover
+
+   Paleta oficial do "Matrix code green":
+     #0D0208  #003B00  #008F11  #00FF41
+   ========================================================================== */
+
+/* ------------------------------------------------------------------ tokens */
+
+:root {
+  /* base */
+  --bg:          #0D0208;
+  --bg-deep:     #060409;
+  --panel:       #0A130D;
+
+  /* verdes */
+  --green:       #00FF41;
+  --green-mid:   #008F11;
+  --green-dark:  #003B00;
+  --green-soft:  #6BFF9A;
+
+  /* texto */
+  --text:        #A9EDBF;
+  --text-dim:    #5F9E72;
+  --text-faint:  #35633F;
+
+  /* linhas e brilho */
+  --line:        rgba(0, 255, 65, 0.13);
+  --line-hi:     rgba(0, 255, 65, 0.38);
+  --glow:        0 0 12px rgba(0, 255, 65, 0.45);
+  --glow-soft:   0 0 24px rgba(0, 255, 65, 0.18);
+
+  /* tipografia */
+  --mono:    "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display: "Share Tech Mono", var(--mono);
+
+  /* métrica */
+  --wrap:    1120px;
+  --topbar:  64px;
+  --gutter:  clamp(1.25rem, 4vw, 3rem);
+}
+
+/* ------------------------------------------------------------------- reset */
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: clamp(0.9rem, 0.86rem + 0.25vw, 1rem);
+  line-height: 1.7;
+  min-height: 100vh;
+  overflow-x: hidden;
+  /* leve vinheta radial pra escurecer as bordas, como monitor de tubo */
+  background-image:
+    radial-gradient(120% 90% at 50% 0%, rgba(0, 143, 17, 0.10), transparent 60%),
+    radial-gradient(100% 100% at 50% 100%, rgba(0, 59, 0, 0.22), transparent 65%);
+  background-attachment: fixed;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+a {
+  color: var(--green);
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--green-mid);
+  color: var(--bg);
+}
+
+/* barra de scroll */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--green-dark) transparent;
+}
+
+body::-webkit-scrollbar { width: 8px; }
+body::-webkit-scrollbar-track { background: var(--bg-deep); }
+
+body::-webkit-scrollbar-thumb {
+  background: var(--green-dark);
+  border-radius: 8px;
+}
+
+body::-webkit-scrollbar-thumb:hover { background: var(--green-mid); }
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.75rem 1.25rem;
+  background: var(--green);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.skip:focus { left: 0; }
+
+:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+
+/* ==========================================================================
+   1. Chuva digital + CRT
+   ========================================================================== */
+
+.rain {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  contain: layout paint;
+}
+
+.rain-col {
+  position: absolute;
+  top: 0;
+  left: var(--x);
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  /* Share Tech Mono não tem katakana; as famílias CJK garantem os glifos em
+     vez de depender do fallback automático do sistema. */
+  font-family: var(--display), "MS Gothic", "Yu Gothic", "Noto Sans JP",
+               "Hiragino Kaku Gothic ProN", monospace;
+  font-size: var(--fs);
+  line-height: 1.05;
+  letter-spacing: 0.18em;
+  /* Rastro escuro de propósito: o que faz o efeito ler como Matrix é a cabeça
+     brilhante caindo, não a massa de glifos. Rastro claro camufla o texto. */
+  color: #00901F;
+  opacity: var(--op);
+  white-space: nowrap;
+  user-select: none;
+  will-change: transform;
+  animation: fall var(--dur) linear var(--delay) infinite;
+  /* Rastro: some no topo (cauda) e fica opaco embaixo, onde está a cabeça.
+     Fazer o contrário apagava justamente o glifo que brilha. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 55%);
+  mask-image: linear-gradient(to bottom, transparent, #000 55%);
+}
+
+/* últimos glifos antes da cabeça: verde cheio */
+.rain-col i {
+  font-style: normal;
+  color: var(--green);
+}
+
+/* "cabeça" da coluna: o glifo da frente, quase branco, brilhando */
+.rain-col b {
+  color: #DCFFE6;
+  font-weight: 400;
+  text-shadow:
+    0 0 6px var(--green),
+    0 0 16px rgba(0, 255, 65, 0.85),
+    0 0 32px rgba(0, 255, 65, 0.4);
+}
+
+@keyframes fall {
+  from { transform: translate3d(0, -100%, 0); }
+  to   { transform: translate3d(0, 100vh, 0); }
+}
+
+/* scanlines, vinheta e um sweep lento por cima de tudo */
+.crt {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 2px,
+    rgba(0, 0, 0, 0.12) 2px 4px
+  );
+}
+
+.crt::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    120% 90% at 50% 50%,
+    transparent 62%,
+    rgba(0, 0, 0, 0.45) 100%
+  );
+}
+
+.crt::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 32vh;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(0, 255, 65, 0.045),
+    transparent
+  );
+  animation: sweep 8s linear infinite;
+}
+
+@keyframes sweep {
+  from { transform: translateY(-40vh); }
+  to   { transform: translateY(120vh); }
+}
+
+/* ==========================================================================
+   2. Topbar + navegação
+   ========================================================================== */
+
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  height: var(--topbar);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 var(--gutter);
+  background: rgba(6, 4, 9, 0.82);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  font-family: var(--display);
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.brand-mark {
+  color: var(--green);
+  text-shadow: var(--glow);
+  animation: caret 1.15s step-end infinite;
+}
+
+.brand:hover .brand-name { color: var(--green); }
+
+.brand-name { transition: color 0.25s ease; }
+
+.nav {
+  display: flex;
+  gap: clamp(1rem, 2.4vw, 2rem);
+  font-size: 0.875rem;
+}
+
+.nav a {
+  position: relative;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+  padding: 0.35rem 0;
+  transition: color 0.25s ease;
+}
+
+.nav a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  height: 1px;
+  background: var(--green);
+  box-shadow: var(--glow);
+  transition: width 0.3s ease;
+}
+
+.nav a:hover,
+.nav a:focus-visible {
+  color: var(--green);
+}
+
+.nav a:hover::after,
+.nav a:focus-visible::after {
+  width: 100%;
+}
+
+/* menu mobile sem JS: checkbox escondido + seletor irmão */
+.nav-toggle {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.burger {
+  display: none;
+  width: 40px;
+  height: 40px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 6px;
+  cursor: pointer;
+  padding: 8px;
+  margin-right: -8px;
+}
+
+.burger span {
+  display: block;
+  height: 2px;
+  width: 22px;
+  background: var(--green);
+  box-shadow: var(--glow);
+  transition: transform 0.3s ease, opacity 0.2s ease, width 0.3s ease;
+}
+
+.burger span:nth-child(2) { width: 15px; }
+
+.nav-toggle:focus-visible + .burger {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   3. Hero
+   ========================================================================== */
+
+main {
+  position: relative;
+  z-index: 1;
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.hero {
+  min-height: 100svh;
+  padding: calc(var(--topbar) + 3rem) 0 5rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-content: center;
+  align-items: center;
+  gap: clamp(2rem, 5vw, 4rem);
+}
+
+/* --- boot digitado ------------------------------------------------------- */
+
+.boot {
+  margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
+  font-family: var(--display);
+  font-size: clamp(0.8rem, 0.72rem + 0.6vw, 1.05rem);
+  line-height: 1.9;
+  color: var(--text-dim);
+}
+
+.boot-line {
+  opacity: 0;
+  white-space: nowrap;
+  /* aparece só na vez dela; a duração de 1ms é só um "liga" no delay certo */
+  animation: line-in 1ms linear var(--type-delay) forwards;
+}
+
+.boot-sign {
+  color: var(--green-mid);
+  opacity: 0.85;
+}
+
+.boot-line--out .boot-text { color: var(--green); }
+
+/* A fonte é monospace, então `1ch` é exatamente a largura de um caractere:
+   o alvo da animação é chars × 1ch, o que faz o cursor parar cravado no fim
+   do texto em qualquer tamanho de fonte.
+   Os longhands abaixo são de propósito: `steps(var(--chars))` dentro do
+   shorthand invalidaria TODA a propriedade `animation` se o browser não
+   aceitasse a substituição, e o texto ficaria preso em width:0 (invisível).
+   Separado assim, o pior caso é perder só o efeito de degraus. */
+.boot-text {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  max-width: 100%;
+  width: 0;
+  animation-name: type;
+  animation-duration: var(--type-dur);
+  animation-delay: var(--type-delay);
+  animation-fill-mode: forwards;
+  animation-timing-function: steps(var(--chars));
+}
+
+/* só a última linha fica com o cursor piscando */
+.boot-line:last-child .boot-text {
+  border-right: 2px solid var(--green);
+  animation-name: type, caret;
+  animation-duration: var(--type-dur), 1.1s;
+  animation-delay: var(--type-delay), var(--type-delay);
+  animation-fill-mode: forwards, none;
+  animation-iteration-count: 1, infinite;
+  animation-timing-function: steps(var(--chars)), step-end;
+}
+
+@keyframes type {
+  to { width: calc(var(--chars) * 1ch + 0.15ch); }
+}
+
+@keyframes line-in {
+  to { opacity: 1; }
+}
+
+@keyframes caret {
+  50% { border-color: transparent; }
+}
+
+/* --- identidade --------------------------------------------------------- */
+
+.hero-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: rise 0.9s cubic-bezier(0.2, 0.7, 0.3, 1) var(--reveal-delay) forwards;
+}
+
+@keyframes rise {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.hero-name {
+  font-family: var(--display);
+  font-size: clamp(2.1rem, 1.2rem + 6.2vw, 4.75rem);
+  line-height: 1.02;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: #E8FFEF;
+  text-shadow:
+    0 0 18px rgba(0, 255, 65, 0.35),
+    0 0 60px rgba(0, 255, 65, 0.12);
+}
+
+.hero-role {
+  margin-top: 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.85rem;
+}
+
+.hero-role-main {
+  font-family: var(--display);
+  font-size: clamp(1.1rem, 0.9rem + 1.2vw, 1.6rem);
+  color: var(--green);
+  text-shadow: var(--glow);
+}
+
+.hero-role-sub {
+  font-size: clamp(0.8rem, 0.75rem + 0.3vw, 0.95rem);
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+}
+
+.hero-role-sub::before {
+  content: "// ";
+  color: var(--text-faint);
+}
+
+.hero-loc {
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text-faint);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* --- botões ------------------------------------------------------------- */
+
+.hero-links {
+  margin-top: clamp(1.75rem, 4vw, 2.5rem);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.btn {
+  --btn-fg: var(--green-soft);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.7rem 1.15rem;
+  border: 1px solid var(--line-hi);
+  border-radius: 3px;
+  background: rgba(0, 255, 65, 0.04);
+  color: var(--btn-fg);
+  font-family: var(--display);
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  transition: color 0.25s ease, border-color 0.25s ease,
+              box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+/* varredura de luz atravessando o botão no hover */
+.btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(0, 255, 65, 0.22) 50%,
+    transparent 80%
+  );
+  transform: translateX(-110%);
+  transition: transform 0.6s ease;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  color: #EAFFF0;
+  border-color: var(--green);
+  box-shadow: var(--glow-soft), inset 0 0 20px rgba(0, 255, 65, 0.08);
+  transform: translateY(-2px);
+}
+
+.btn:hover::before,
+.btn:focus-visible::before {
+  transform: translateX(110%);
+}
+
+.btn-bracket {
+  color: var(--green-mid);
+  transition: color 0.25s ease;
+}
+
+.btn:hover .btn-bracket { color: var(--green); }
+
+.btn--primary {
+  background: rgba(0, 255, 65, 0.11);
+  border-color: var(--green-mid);
+  color: var(--green);
+}
+
+/* --- foto --------------------------------------------------------------- */
+
+.hero-photo {
+  display: flex;
+  justify-content: center;
+}
+
+.photo-frame {
+  position: relative;
+  width: clamp(180px, 46vw, 300px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  padding: 8px;
+  isolation: isolate;
+  /* halo verde por fora */
+  box-shadow: 0 0 60px rgba(0, 255, 65, 0.22);
+}
+
+/* anel de código girando em volta da foto */
+.photo-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0turn,
+    transparent 0 42%,
+    var(--green-dark) 58%,
+    var(--green-mid) 78%,
+    var(--green) 93%,
+    transparent 100%
+  );
+  -webkit-mask: radial-gradient(circle at center, transparent 0 68%, #000 70%);
+  mask: radial-gradient(circle at center, transparent 0 68%, #000 70%);
+  animation: spin 9s linear infinite;
+}
+
+/* vinheta interna suave: o fundo claro da foto recua e ela assenta na página
+   escura, sem mexer na cor. */
+.photo-frame::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 40%,
+    transparent 30%,
+    rgba(6, 4, 9, 0.22) 62%,
+    rgba(6, 4, 9, 0.65) 100%
+  );
+  transition: opacity 0.6s ease;
+}
+
+.photo-frame:hover::after { opacity: 0.45; }
+
+/* Foto em cor natural — sem duotone. */
+.photo-frame img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.photo-frame:hover img {
+  transform: scale(1.02);
+}
+
+@keyframes spin {
+  to { transform: rotate(1turn); }
+}
+
+/* --- seta de scroll ----------------------------------------------------- */
+
+.scroll-hint {
+  display: none;
+  width: 24px;
+  height: 40px;
+  margin: 0 auto;
+  border: 1px solid var(--line-hi);
+  border-radius: 12px;
+  position: relative;
+}
+
+.scroll-hint span {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  width: 3px;
+  height: 8px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: var(--green);
+  box-shadow: var(--glow);
+  animation: drop 1.8s ease-in-out infinite;
+}
+
+@keyframes drop {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  50%      { transform: translateY(14px); opacity: 0.35; }
+}
+
+/* ==========================================================================
+   4. Estrutura de seção
+   ========================================================================== */
+
+.section {
+  padding: clamp(3.5rem, 7vw, 6rem) 0;
+  scroll-margin-top: var(--topbar);
+}
+
+.sec-head {
+  margin-bottom: clamp(2rem, 5vw, 3.25rem);
+}
+
+.prompt {
+  font-family: var(--display);
+  font-size: clamp(0.78rem, 0.72rem + 0.3vw, 0.92rem);
+  color: var(--green-mid);
+  letter-spacing: 0.03em;
+  word-break: break-word;
+}
+
+.prompt-sign {
+  color: var(--text-faint);
+  margin-right: 0.4rem;
+}
+
+.sec-head h2 {
+  margin-top: 0.5rem;
+  display: inline-block;
+  font-family: var(--display);
+  font-size: clamp(1.6rem, 1.1rem + 2.6vw, 2.9rem);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: #E4FFEC;
+  text-shadow: 0 0 16px rgba(0, 255, 65, 0.3);
+}
+
+.sec-head h2::after {
+  content: "";
+  display: block;
+  height: 1px;
+  margin-top: 0.6rem;
+  background: linear-gradient(90deg, var(--green), transparent);
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.4);
+}
+
+/* ==========================================================================
+   5. Sobre
+   ========================================================================== */
+
+.about {
+  max-width: 62ch;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  border-left: 1px solid var(--line);
+  padding-left: clamp(1rem, 3vw, 1.75rem);
+}
+
+.about p { color: var(--text); }
+
+/* primeira frase em destaque, como saída de comando */
+.about p:first-child {
+  color: #D6FFE2;
+  font-size: 1.06em;
+}
+
+/* ==========================================================================
+   6. Trajetória (timeline)
+   ========================================================================== */
+
+.timeline {
+  position: relative;
+  padding-left: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+/* trilho vertical */
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 10px;
+  bottom: 10px;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--green) 4%,
+    var(--green-mid) 35%,
+    var(--green-dark) 80%,
+    transparent
+  );
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.25);
+}
+
+.xp { position: relative; }
+
+.xp-node {
+  position: absolute;
+  left: -26px;
+  top: 30px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--green-dark);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* o cargo atual pulsa */
+.xp:first-child .xp-node {
+  background: var(--green);
+  border-color: var(--green);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+.xp:hover .xp-node {
+  border-color: var(--green);
+  box-shadow: var(--glow);
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.55); }
+  70%      { box-shadow: 0 0 0 9px rgba(0, 255, 65, 0); }
+}
+
+.xp-card {
+  background:
+    linear-gradient(180deg, rgba(0, 255, 65, 0.035), transparent 45%),
+    var(--panel);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--green-dark);
+  border-radius: 4px;
+  padding: clamp(1.1rem, 3vw, 1.6rem);
+  transition: border-color 0.3s ease, box-shadow 0.35s ease,
+              transform 0.3s ease, background-color 0.3s ease;
+}
+
+.xp-card:hover {
+  border-color: var(--line-hi);
+  border-left-color: var(--green);
+  box-shadow: 0 14px 40px -18px rgba(0, 255, 65, 0.35),
+              inset 0 0 40px rgba(0, 255, 65, 0.03);
+  transform: translateY(-3px);
+}
+
+.xp-head {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(0.85rem, 2.5vw, 1.25rem);
+  margin-bottom: 1rem;
+}
+
+.xp-logo {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 4px;
+  object-fit: cover;
+  border: 1px solid var(--line-hi);
+  background: var(--bg-deep);
+  filter: grayscale(1) sepia(0.55) hue-rotate(60deg) saturate(1.6)
+          brightness(0.95);
+  transition: filter 0.5s ease, border-color 0.3s ease;
+}
+
+.xp-card:hover .xp-logo {
+  filter: none;
+  border-color: var(--green-mid);
+}
+
+/* placeholder enquanto o logo da empresa não chega */
+.xp-logo--empty {
+  display: grid;
+  place-items: center;
+  font-family: var(--display);
+  font-size: 1.35rem;
+  letter-spacing: 0.05em;
+  color: var(--green-mid);
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(0, 255, 65, 0.05) 0 6px,
+      transparent 6px 12px
+    ),
+    var(--bg-deep);
+  filter: none;
+}
+
+.xp-ident { min-width: 0; }
+
+.xp-role {
+  font-family: var(--display);
+  font-size: clamp(1rem, 0.92rem + 0.5vw, 1.2rem);
+  font-weight: 400;
+  line-height: 1.35;
+  color: #E4FFEC;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.xp-badge {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--green);
+  border-radius: 2px;
+  padding: 0.15rem 0.45rem;
+  box-shadow: var(--glow);
+}
+
+.xp-org {
+  margin-top: 0.3rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.xp-company {
+  color: var(--green);
+  font-weight: 500;
+}
+
+.xp-slash { color: var(--text-faint); }
+
+.xp-period {
+  color: var(--text-dim);
+  letter-spacing: 0.03em;
+}
+
+.xp-bullets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  /* trava o comprimento da linha: em tela larga o card estica, o texto não */
+  max-width: 82ch;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.xp-bullets li {
+  position: relative;
+  padding-left: 1.3rem;
+}
+
+.xp-bullets li::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--green-mid);
+}
+
+.xp-tags {
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.xp-tags li {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 0.25rem 0.55rem;
+  transition: color 0.25s ease, border-color 0.25s ease;
+}
+
+.xp-card:hover .xp-tags li {
+  color: var(--green-soft);
+  border-color: var(--line-hi);
+}
+
+/* ==========================================================================
+   7. Stack
+   ========================================================================== */
+
+.stack {
+  display: grid;
+  gap: clamp(1rem, 2.5vw, 1.5rem);
+  grid-template-columns: 1fr;
+}
+
+.stack-group {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: clamp(1.2rem, 3vw, 1.6rem);
+  transition: border-color 0.3s ease, box-shadow 0.35s ease;
+}
+
+.stack-group:hover {
+  border-color: var(--line-hi);
+  box-shadow: 0 0 30px -10px rgba(0, 255, 65, 0.25);
+}
+
+.stack-dir {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--green);
+  letter-spacing: 0.04em;
+  margin-bottom: 1rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.stack-dir::before {
+  content: "▸ ";
+  color: var(--text-faint);
+}
+
+.stack-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip {
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  background: rgba(0, 255, 65, 0.045);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 0.4rem 0.75rem;
+  cursor: default;
+  transition: color 0.2s ease, border-color 0.2s ease,
+              box-shadow 0.25s ease, transform 0.2s ease,
+              background-color 0.2s ease;
+}
+
+.chip:hover {
+  color: #EAFFF0;
+  background: rgba(0, 255, 65, 0.12);
+  border-color: var(--green);
+  box-shadow: 0 0 14px -2px rgba(0, 255, 65, 0.5);
+  transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   8. Formação
+   ========================================================================== */
+
+.formacao {
+  display: grid;
+  gap: clamp(1rem, 2.5vw, 1.5rem);
+  grid-template-columns: 1fr;
+}
+
+.edu-card,
+.certs {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: clamp(1.2rem, 3vw, 1.75rem);
+  transition: border-color 0.3s ease, box-shadow 0.35s ease;
+}
+
+.edu-card:hover,
+.certs:hover {
+  border-color: var(--line-hi);
+  box-shadow: 0 0 30px -10px rgba(0, 255, 65, 0.25);
+}
+
+.edu-degree {
+  font-family: var(--display);
+  font-size: clamp(1.05rem, 0.95rem + 0.55vw, 1.3rem);
+  font-weight: 400;
+  color: #E4FFEC;
+  line-height: 1.35;
+}
+
+.edu-school {
+  margin-top: 0.4rem;
+  color: var(--green);
+  font-size: 0.9rem;
+}
+
+.edu-period {
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+}
+
+.certs-title {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--green);
+  margin-bottom: 1rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.certs-title::before {
+  content: "▸ ";
+  color: var(--text-faint);
+}
+
+.certs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  font-size: 0.88rem;
+}
+
+.cert {
+  position: relative;
+  padding-left: 1.5rem;
+  color: var(--text);
+}
+
+.cert::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--green-mid);
+}
+
+/* ==========================================================================
+   9. Footer
+   ========================================================================== */
+
+.foot {
+  position: relative;
+  z-index: 1;
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding: clamp(2.5rem, 6vw, 4rem) var(--gutter) clamp(3rem, 6vw, 4rem);
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+
+.foot .prompt {
+  margin-bottom: 0.9rem;
+}
+
+.foot-note {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+.foot-egg {
+  margin-top: 1.1rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.foot-egg a {
+  color: var(--text-faint);
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.foot-egg a:hover {
+  color: var(--green);
+  text-shadow: var(--glow);
+}
+
+/* ==========================================================================
+   10. Reveal no scroll — sem JS, via scroll-driven animations
+       Padrão: tudo visível. O efeito só entra onde o browser suporta,
+       então nenhum conteúdo depende dele pra aparecer.
+   ========================================================================== */
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal-in linear both;
+      animation-timeline: view();
+      animation-range: entry 5% cover 26%;
+    }
+
+    @keyframes reveal-in {
+      from {
+        opacity: 0;
+        transform: translateY(26px);
+        filter: blur(3px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+        filter: blur(0);
+      }
+    }
+  }
+}
+
+/* ==========================================================================
+   11. Responsivo
+   ========================================================================== */
+
+/* ---- tablet ---- */
+@media (min-width: 640px) {
+  .stack,
+  .formacao {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .xp-logo {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+/* ---- desktop ---- */
+@media (min-width: 900px) {
+  .hero {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: clamp(2rem, 6vw, 5rem);
+    padding-bottom: 7rem;
+  }
+
+  .hero-copy { grid-column: 1; }
+  .hero-photo { grid-column: 2; }
+
+  .scroll-hint {
+    display: block;
+    grid-column: 1 / -1;
+  }
+
+  .timeline { padding-left: 44px; }
+
+  .timeline::before { left: 14px; }
+
+  .xp-node { left: -36px; }
+
+  .xp-logo {
+    width: 72px;
+    height: 72px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .formacao {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  }
+}
+
+/* ---- mobile: menu em painel ---- */
+@media (max-width: 899px) {
+  .burger { display: flex; }
+
+  .nav {
+    position: fixed;
+    top: var(--topbar);
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    gap: 0;
+    padding: 0 var(--gutter);
+    background: rgba(6, 4, 9, 0.97);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+    max-height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    transition: max-height 0.4s ease, visibility 0.4s, padding 0.4s ease;
+  }
+
+  .nav a {
+    padding: 1rem 0;
+    font-size: 1rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .nav a:last-child { border-bottom: none; }
+
+  .nav-toggle:checked ~ .nav {
+    max-height: 70svh;
+    visibility: visible;
+    padding: 0.5rem var(--gutter) 1rem;
+    box-shadow: 0 20px 50px -20px rgba(0, 255, 65, 0.25);
+  }
+
+  /* hambúrguer vira X */
+  .nav-toggle:checked ~ .burger span:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+  }
+
+  .nav-toggle:checked ~ .burger span:nth-child(2) {
+    opacity: 0;
+    width: 0;
+  }
+
+  .nav-toggle:checked ~ .burger span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+  }
+
+  /* menos chuva em telas pequenas — bateria e legibilidade */
+  .rain-col:nth-child(3n) { display: none; }
+}
+
+@media (max-width: 480px) {
+  .rain-col:nth-child(2n) { display: none; }
+
+  .boot { font-size: 0.72rem; }
+
+  .btn {
+    flex: 1 1 calc(50% - 0.75rem);
+    justify-content: center;
+    padding: 0.7rem 0.5rem;
+  }
+}
+
+/* ==========================================================================
+   12. Acessibilidade: respeitar quem pediu menos movimento
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* garante que nada fique preso no estado inicial da animação */
+  .boot-line,
+  .hero-reveal { opacity: 1 !important; transform: none !important; }
+
+  .boot-text { width: auto !important; border-right-color: transparent; }
+
+  /* A chuva não desaparece — ela congela. O visitante pediu menos movimento,
+     não menos design. Cada coluna fica na posição que o build sorteou. */
+  .rain-col {
+    animation-name: none !important;
+    transform: translateY(var(--y));
+  }
+
+  .crt::after { display: none; }
+}
+
+/* impressão: currículo em papel, sem tema escuro */
+@media print {
+  .rain,
+  .crt,
+  .topbar,
+  .scroll-hint,
+  .boot,
+  .foot-egg { display: none !important; }
+
+  body {
+    background: #fff;
+    color: #111;
+    background-image: none;
+  }
+
+  .hero { min-height: auto; padding-top: 0; }
+
+  .hero-name,
+  .sec-head h2,
+  .xp-role,
+  .edu-degree { color: #000; text-shadow: none; }
+
+  .xp-card,
+  .stack-group,
+  .edu-card,
+  .certs {
+    background: #fff;
+    border: 1px solid #bbb;
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  .hero-reveal,
+  .reveal { opacity: 1 !important; transform: none !important; }
+
+  .photo-frame::before,
+  .photo-frame::after { display: none; }
+
+  a { color: #111; }
+}

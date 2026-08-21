@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+
+# Saída do build. Gerada por `python build.py`, publicada pelo GitHub Actions.
+# Nada aqui é fonte — não versionar.
+dist/
+
+# arquivos temporários de debug
+_*.html
