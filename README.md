@@ -19,7 +19,6 @@ Site currículo do Leonardo Pianowski, com tema visual inspirado em
 ```
 ├── data.py                     conteúdo — a fonte de verdade
 ├── build.py                    gerador: data.py + static/ -> dist/
-├── make_favicon.py             ferramenta de asset (roda raramente)
 ├── static/                     copiado verbatim para dist/
 │   ├── css/style.css
 │   ├── icons/                  favicon.svg (fonte) + .ico e .png gerados
@@ -93,16 +92,9 @@ O ícone é o mesmo `>_` do topbar. A fonte de verdade é
 [`static/icons/favicon.svg`](static/icons/favicon.svg) — formas geométricas,
 sem `<text>`, então não depende de nenhuma fonte estar disponível.
 
-```bash
-python make_favicon.py
-```
-
-Rasteriza com o Chrome/Edge instalado e monta o `.ico` (16/32/48 px, payloads
-PNG) com `struct` da stdlib. Gera também o `apple-touch-icon.png` de 180 px com
-fundo quadrado e opaco, porque o iOS aplica a própria máscara e ignora o alpha.
-
-Os rasterizados são versionados de propósito: rasterizar exige um browser, e
-depender disso no CI seria frágil.
+O `favicon.ico` (16/32/48 px) e o `apple-touch-icon.png` (180 px, fundo
+quadrado e opaco, porque o iOS aplica a própria máscara) foram gerados a partir
+dele e estão versionados. Se o SVG mudar, eles precisam ser regerados à parte.
 
 ## Assets pendentes
 
