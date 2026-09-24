@@ -140,7 +140,7 @@ EXPERIENCES = [
         "role": "Customer Success Analyst",
         "company": "Comunica.In",
         "logo": "comunicain",
-        "period": "fev/2022 — mar/2023",
+        "period": "nov/2021 — mar/2023",
         "tags": ["B2B SaaS", "Zendesk", "CSAT"],
         "bullets": [
             "Atendimento a cliente enterprise (grande porte) por meio do Zendesk.",
@@ -152,24 +152,10 @@ EXPERIENCES = [
         ],
     },
     {
-        "role": "Customer Experience Analyst",
-        "company": "BEES Bank Brasil",
-        "logo": "bees",
-        "period": "out/2021 — fev/2022",
-        "tags": ["Suporte N2", "SQL", "DataBricks", "Grafana"],
-        "bullets": [
-            "Atuação no suporte de Nível 2 (N2).",
-            "Respondendo dúvidas e resolvendo problemas através de tickets via "
-            "Zendesk.",
-            "Responsável por demandas da área de banking (TED, PIX, boletos).",
-            "Uso de Grafana e DataBricks (SQL) para fazer a análise dos casos.",
-        ],
-    },
-    {
         "role": "Implementation Success Manager",
         "company": "Olist",
         "logo": "olist",
-        "period": "jun/2021 — out/2021",
+        "period": "abr/2021 — out/2021",
         "bullets": [
             "Contato com a base de lojistas após o ganho, por meio de chat, "
             "telefone e e-mail, dando o suporte necessário.",
@@ -180,19 +166,6 @@ EXPERIENCES = [
             "Acompanhamento dos primeiros passos do lojista atuando de forma "
             "consultiva, identificando oportunidades de negócio e de melhoria, "
             "além de atuar em reversão ao churn.",
-        ],
-    },
-    {
-        "role": "Analista de Relacionamento Junior",
-        "company": "Banco Bari",
-        "logo": "bari",
-        "period": "mar/2021 — jun/2021",
-        "bullets": [
-            "Responsável por atender dúvidas, problemas e sugestões referentes "
-            "ao banco digital.",
-            "Atendimento de até 4 chats simultâneos.",
-            "Auxílio na criação dos materiais de apoio aos colaboradores e "
-            "construção de fluxogramas dos processos da área.",
         ],
     },
     {
