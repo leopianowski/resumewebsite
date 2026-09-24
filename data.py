@@ -229,17 +229,6 @@ EXPERIENCES = [
             "conforme o funil de venda.",
         ],
     },
-    {
-        "role": "Diretor Administrativo",
-        "company": "Yapira UFPR",
-        "logo": "yapira",
-        "period": "jul/2018 — mar/2019",
-        "bullets": [
-            "Desenvolvimento de processos seletivos, implementação de processos "
-            "gerenciais, desenvolvimento de padrões e organização de eventos e "
-            "viagens.",
-        ],
-    },
 ]
 
 # ---------------------------------------------------------------- stack
