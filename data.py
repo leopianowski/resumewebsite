@@ -272,7 +272,7 @@ EDUCATION = [
 ]
 
 CERTIFICATIONS = [
-    "Desenvolvimento Web Básico — HTML, CSS, JavaScript",
+    "Desenvolvimento Python",
     "Bootcamp Customer Success",
     "Customer Experience (CX)",
     "Inteligência Emocional",
