@@ -35,7 +35,6 @@ LOGOS = IMG / "logos"
 CSS = STATIC / "css" / "style.css"
 DIST = ROOT / "dist"              # saída, no .gitignore
 OUT = DIST / "index.html"
-PREVIEW = DIST / "preview.html"
 
 # Aviso no topo do HTML gerado. Sem ele, é fácil editar o dist/index.html
 # por engano e perder o trabalho no build seguinte.
@@ -115,12 +114,9 @@ def render_rain() -> str:
         delay = round(-rnd.uniform(0, duration), 2)
         size = rnd.choice((13, 14, 15, 16, 18, 20))
         opacity = round(rnd.uniform(0.30, 0.72), 2)
-        # Posição estática usada quando o visitante pediu menos movimento:
-        # a chuva continua na tela, só não cai.
-        static_y = round(rnd.uniform(-20, 80), 1)
         style = (
             f"--x:{left}%;--dur:{duration}s;--delay:{delay}s;"
-            f"--fs:{size}px;--op:{opacity};--y:{static_y}vh"
+            f"--fs:{size}px;--op:{opacity}"
         )
         # Três níveis de brilho, como no filme: rastro escuro, alguns glifos em
         # verde cheio e a cabeça quase branca.
@@ -458,53 +454,6 @@ def build() -> str:
     return html, missing_logos, photo_pending
 
 
-# ------------------------------------------------------------------ preview
-#
-# Quem tem os efeitos visuais do Windows desligados (ou "reduzir movimento" no
-# macOS/Linux) faz o browser reportar `prefers-reduced-motion: reduce`, e o
-# site — corretamente — congela as animações. Isso é o comportamento certo pro
-# visitante, mas impede o autor de avaliar o próprio design.
-#
-# `--preview` gera um preview.html com o CSS já resolvido pro estado COM
-# movimento, sem tocar em configuração de sistema nenhuma.
-
-def strip_reduced_motion(css: str) -> str:
-    """Remove o bloco @media (prefers-reduced-motion: reduce) inteiro."""
-    marker = "@media (prefers-reduced-motion: reduce)"
-    start = css.find(marker)
-    if start == -1:
-        return css
-    depth = 0
-    for i in range(css.index("{", start), len(css)):
-        if css[i] == "{":
-            depth += 1
-        elif css[i] == "}":
-            depth -= 1
-            if depth == 0:
-                return css[:start] + css[i + 1:]
-    return css
-
-
-def build_preview(html: str) -> str:
-    """
-    HTML de preview: CSS inline, bloco de reduced-motion removido e os blocos
-    `no-preference` promovidos a `all` (senão o browser continuaria pulando
-    eles, já que ele ainda reporta `reduce`).
-    """
-    css = strip_reduced_motion(CSS.read_text(encoding="utf-8"))
-    css = css.replace("(prefers-reduced-motion: no-preference)", "all")
-    banner = (
-        "<!-- ARQUIVO GERADO por `python build.py --preview`. Nao publicar: o "
-        "CSS aqui ignora prefers-reduced-motion de proposito, so pra "
-        "visualizacao local. O site de verdade e o index.html. -->\n"
-    )
-    html = html.replace(
-        '<link rel="stylesheet" href="css/style.css">',
-        f"<style>\n{css}\n</style>",
-    )
-    return banner + html
-
-
 def write_dist(html: str) -> None:
     """
     Monta o dist/ do zero: copia static/ verbatim, escreve o index.html e
@@ -524,13 +473,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Gera o site em dist/ a partir de data.py e static/."
     )
-    parser.add_argument(
-        "--preview",
-        action="store_true",
-        help="gera também dist/preview.html com as animações forçadas, para "
-             "quem tem 'reduzir movimento' ativo no sistema",
-    )
-    args = parser.parse_args()
+    parser.parse_args()
 
     html, missing_logos, photo_pending = build()
     write_dist(html)
@@ -542,11 +485,6 @@ def main() -> int:
     print(f"[ok] {len(data.EXPERIENCES)} experiências, "
           f"{sum(len(g['items']) for g in data.STACK)} itens de stack, "
           f"{data.RAIN_COLUMNS} colunas de chuva")
-
-    if args.preview:
-        PREVIEW.write_text(build_preview(html), encoding="utf-8")
-        print("[ok] dist/preview.html — animações forçadas, ignora "
-              "prefers-reduced-motion")
 
     if missing_logos:
         print("\n[pendente] logos faltando — jogue os arquivos em static/img/logos/:")

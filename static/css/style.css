@@ -1161,24 +1161,22 @@ main {
    ========================================================================== */
 
 @supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .reveal {
-      animation: reveal-in linear both;
-      animation-timeline: view();
-      animation-range: entry 5% cover 26%;
-    }
+  .reveal {
+    animation: reveal-in linear both;
+    animation-timeline: view();
+    animation-range: entry 5% cover 26%;
+  }
 
-    @keyframes reveal-in {
-      from {
-        opacity: 0;
-        transform: translateY(26px);
-        filter: blur(3px);
-      }
-      to {
-        opacity: 1;
-        transform: none;
-        filter: blur(0);
-      }
+  @keyframes reveal-in {
+    from {
+      opacity: 0;
+      transform: translateY(26px);
+      filter: blur(3px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+      filter: blur(0);
     }
   }
 }
@@ -1299,37 +1297,6 @@ main {
     justify-content: center;
     padding: 0.7rem 0.5rem;
   }
-}
-
-/* ==========================================================================
-   12. Acessibilidade: respeitar quem pediu menos movimento
-   ========================================================================== */
-
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-
-  /* garante que nada fique preso no estado inicial da animação */
-  .boot-line,
-  .hero-reveal { opacity: 1 !important; transform: none !important; }
-
-  .boot-text { width: auto !important; border-right-color: transparent; }
-
-  /* A chuva não desaparece — ela congela. O visitante pediu menos movimento,
-     não menos design. Cada coluna fica na posição que o build sorteou. */
-  .rain-col {
-    animation-name: none !important;
-    transform: translateY(var(--y));
-  }
-
-  .crt::after { display: none; }
 }
 
 /* impressão: currículo em papel, sem tema escuro */

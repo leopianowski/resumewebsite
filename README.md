@@ -40,21 +40,6 @@ python build.py
 
 Abra `dist/index.html`. Sem dependências — só a stdlib do Python 3.
 
-### Preview das animações
-
-Se o seu sistema tem "reduzir movimento" ativo (no Windows: efeitos visuais
-desligados), o browser reporta `prefers-reduced-motion: reduce` e o site
-congela as animações — corretamente. Para conseguir avaliar o design mesmo
-assim:
-
-```bash
-python build.py --preview   # gera dist/preview.html
-```
-
-O `preview.html` remove o bloco `@media (prefers-reduced-motion: reduce)` e
-promove os blocos `no-preference` a `all`. É só visualização local, nunca vai
-para produção.
-
 ## Deploy
 
 Push na `main` → o GitHub Actions roda o `build.py` e publica o `dist/`.
@@ -81,10 +66,9 @@ Tudo em CSS, com o Python fazendo o trabalho repetitivo no build:
   em browser sem suporte o conteúdo aparece normalmente.
 - **Menu mobile** — `<input type="checkbox">` escondido + seletor irmão.
 
-Com `prefers-reduced-motion`, a chuva **congela** em vez de desaparecer (o
-Python sorteia uma posição estática por coluna). A pessoa pediu menos
-movimento, não menos design. Também tem folha de impressão para virar currículo
-em papel.
+As animações rodam sempre, inclusive para quem tem "reduzir movimento" ativo
+no sistema — o site ignora `prefers-reduced-motion` de propósito. Também tem
+folha de impressão para virar currículo em papel.
 
 ## Favicon
 
