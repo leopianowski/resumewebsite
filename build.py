@@ -446,7 +446,7 @@ def build() -> str:
 
   <footer class="foot">
     <p class="prompt"><span class="prompt-sign">leo@matrix:~$</span> exit</p>
-    <p class="foot-note">Feito com 💚 por Leo — Python, HTML e CSS puro. Zero JavaScript.</p>
+    <p class="foot-note">Feito com 💚 por Leo — Python, HTML e CSS puro.</p>
     <p class="foot-egg">
       <a href="https://github.com/LeoPianowski" target="_blank" rel="noopener">Follow the white rabbit</a>
     </p>
